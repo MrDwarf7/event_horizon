@@ -4,43 +4,42 @@
 
 #include <math.h>
 
-#include "SDL2/SDL.h"
+#define CONSTANTS_H_DEFAULTS
 
-enum {
-	WIDTH  = 1000,
-	HEIGHT = 1000,
-};
+#include "constants.h"
+#include "SDL2/SDL.h"
 
 /* Draw the Event Horizon */
 void draw(
 	SDL_Renderer* renderer
 ) {
-	for (int col = 0; col < HEIGHT; ++col) {
-		for (int row = 0; row < WIDTH; ++row) {
-			const float x = col, y = row;
-			constexpr float w = WIDTH, h = HEIGHT;
-			const float cx = (2 * x - w) / h;
-			const float cy = (2 * y - h) / h;
-			float d        = sqrtf((cx * cx) + (cy * cy));
-
-			d -= 0.5;
-			d += 0.01 * h / (2 * (y - x) + h - w);
-			d = fabsf(d);
-			if (d < 1e-6) {
-				d = 1e-6;
+	for (u32 col = 0; col < HEIGHT; ++col) {
+		for (u32 row = 0; row < WIDTH; ++row) {
+			const f32 xcol       = (float)col;
+			const f32 yrow       = (float)row;
+			constexpr f32 width  = WIDTH;
+			constexpr f32 height = HEIGHT;
+			const f32 cxdh       = (2 * xcol - width) / height;
+			const f32 cydh       = (2 * yrow - height) / height;
+			f32 delt             = sqrtf((cxdh * cxdh) + (cydh * cydh));
+			delt -= (f32)DELT_0_5;
+			delt += (f32)DELT_0_01 * height / (2 * (yrow - xcol) + height - width);
+			delt = fabsf(delt);
+			if (delt < EXPONEN_1e_6) {
+				delt = EXPONEN_1e_6;
 			}
-			d                 = 0.1 / d;
+			delt              = DELT_1 / delt;
 
-			const Uint8 color = (Uint8)(255 * d / (1 + d));
-			SDL_SetRenderDrawColor(renderer, color, color, color, 255);
-			SDL_RenderDrawPoint(renderer, row, col);
+			const Uint8 color = (Uint8)(255 * delt / (1 + delt));
+			SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHAOPAQUE);
+			SDL_RenderDrawPoint(renderer, (int)row, (int)col);
 		}
 	}
 }
 
 int main() {
-	void SDL_SetMainReady();
-	const int err = SDL_Init(SDL_INIT_VIDEO);
+	SDL_SetMainReady();
+	const usize err = SDL_Init(SDL_INIT_VIDEO);
 	if (err != 0) {
 		SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
 		return EXIT_FAILURE;
@@ -55,18 +54,19 @@ int main() {
 	SDL_RenderPresent(renderer);
 
 	SDL_Event event;
-	int quit = 0;
 
-	while (quit != 1) {
+	bool quit = false;
+
+	while (!quit) {
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_QUIT) {
-				quit = 1;
+				quit = true;
 			}
 
 			if (event.type == SDL_KEYDOWN) {
 				switch (event.key.keysym.sym) {
 					case SDLK_ESCAPE:
-					case SDLK_q     : quit = 1; break;
+					case SDLK_q     : quit = true; break;
 					default         : continue;
 				}
 			}
